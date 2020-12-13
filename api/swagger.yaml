@@ -1,0 +1,522 @@
+openapi: 3.0.0
+info:
+  title: API for blog
+  version: 1.0.0
+servers:
+- url: /
+paths:
+  /api/1/posts:
+    get:
+      summary: Get list of posts
+      operationId: GetPostList
+      parameters:
+      - name: offset
+        in: query
+        description: The amount of items to skip before starting fetch
+        required: true
+        style: form
+        explode: true
+        schema:
+          minimum: 0
+          type: integer
+      - name: limit
+        in: query
+        description: The amount of items to return
+        required: true
+        style: form
+        explode: true
+        schema:
+          maximum: 50
+          minimum: 1
+          type: integer
+      responses:
+        "200":
+          description: Fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/postList'
+    post:
+      summary: Create a post
+      operationId: CreatePost
+      parameters:
+      - name: title
+        in: query
+        description: Post title
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: summary
+        in: query
+        description: Post summary
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: content
+        in: query
+        description: Post content
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: categoryList
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: array
+          items:
+            type: integer
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "403":
+          description: Not authorized
+  /api/1/posts/{postId}:
+    get:
+      summary: Get a specific post
+      operationId: GetPost
+      parameters:
+      - name: postId
+        in: path
+        description: Id of a post
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/post'
+    delete:
+      summary: Delete post
+      operationId: DeletePost
+      parameters:
+      - name: postId
+        in: path
+        description: Id of a post
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: Deleted
+        "403":
+          description: Not authorized
+    patch:
+      summary: Update post
+      operationId: PatchPost
+      parameters:
+      - name: postId
+        in: path
+        description: Id of a post
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      - name: title
+        in: query
+        description: Post title
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: summary
+        in: query
+        description: Post summary
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: content
+        in: query
+        description: Post content
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: categoryList
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: array
+          items:
+            type: integer
+      responses:
+        "200":
+          description: Updated
+        "403":
+          description: Not authorized
+  /api/1/posts/{postId}/publish:
+    post:
+      summary: Publish post to public
+      operationId: PublishPost
+      parameters:
+      - name: postId
+        in: path
+        description: Id of a post
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: Published
+        "403":
+          description: Not authorized
+  /api/1/posts/{postId}/comments:
+    get:
+      summary: Get list of comments for post
+      operationId: GetComments
+      parameters:
+      - name: postId
+        in: path
+        description: Id of a post
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: Fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/inline_response_200_1'
+                x-content-type: application/json
+    post:
+      summary: Publish comment for post
+      operationId: PostComment
+      parameters:
+      - name: postId
+        in: path
+        description: Id of a post
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      - name: content
+        in: query
+        description: Content of a comment
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Published
+        "403":
+          description: Not authorized
+  /api/1/categories:
+    get:
+      summary: Get list of categories
+      operationId: GetfCategories
+      responses:
+        "200":
+          description: Fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/category'
+                x-content-type: application/json
+components:
+  schemas:
+    postList:
+      type: array
+      items:
+        $ref: '#/components/schemas/postList_inner'
+      x-schema-name: postList
+    post:
+      required:
+      - author
+      - categoryList
+      - commentsCount
+      - content
+      - id
+      - publishedAt
+      - summary
+      - title
+      - updatedAt
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID of a post
+        author:
+          $ref: '#/components/schemas/post_author'
+        title:
+          type: string
+          description: Post's title
+        summary:
+          type: string
+          description: Posts's summary
+        content:
+          type: string
+          description: Post's content
+        commentsCount:
+          type: integer
+          description: Amount of comments for this post
+        categoryList:
+          type: array
+          description: List of categories
+          items:
+            $ref: '#/components/schemas/category'
+        publishedAt:
+          type: string
+          description: Date of publication
+        updatedAt:
+          type: string
+          description: Date of last update
+      example:
+        summary: summary
+        publishedAt: publishedAt
+        author:
+          id: 6
+          username: username
+        commentsCount: 1
+        categoryList:
+        - id: 5
+          title: title
+        - id: 5
+          title: title
+        id: 0
+        title: title
+        content: content
+        updatedAt: updatedAt
+    category:
+      required:
+      - id
+      - title
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Category ID
+        title:
+          type: string
+          description: Category's title
+      example:
+        id: 5
+        title: title
+    inline_response_200:
+      required:
+      - id
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID of created post
+      example:
+        id: 0
+    api1postspostIdcomments_author:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+      description: Comment's author
+      example:
+        id: 0
+        username: username
+    inline_response_200_1:
+      required:
+      - author
+      - content
+      - createdAt
+      type: object
+      properties:
+        author:
+          $ref: '#/components/schemas/api1postspostIdcomments_author'
+        createdAt:
+          type: string
+          description: Date of comment publication
+        content:
+          type: string
+          description: Content of a comment
+      example:
+        createdAt: createdAt
+        author:
+          id: 0
+          username: username
+        content: content
+    postList_inner:
+      required:
+      - author
+      - categoryList
+      - commentsCount
+      - id
+      - publishedAt
+      - summary
+      - title
+      - updatedAt
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID of a post
+        author:
+          required:
+          - id
+          - username
+          type: object
+          properties:
+            id:
+              type: integer
+              description: Author's id
+            username:
+              type: string
+              description: Author's username
+          description: Post's author
+          example:
+            id: 6
+            username: username
+        title:
+          type: string
+          description: Post's title
+        summary:
+          type: string
+          description: Posts's summary
+        commentsCount:
+          type: integer
+          description: Amount of comments for this post
+        categoryList:
+          type: array
+          description: List of categories
+          items:
+            $ref: '#/components/schemas/category'
+        publishedAt:
+          type: string
+          description: Date of publication
+        updatedAt:
+          type: string
+          description: Date of last update
+      example:
+        summary: summary
+        publishedAt: publishedAt
+        author:
+          id: 6
+          username: username
+        commentsCount: 1
+        categoryList:
+        - id: 5
+          title: title
+        - id: 5
+          title: title
+        id: 0
+        title: title
+        updatedAt: updatedAt
+    post_author:
+      required:
+      - id
+      - username
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Author's id
+        username:
+          type: string
+          description: Author's username
+      description: Post's author
+      example:
+        id: 6
+        username: username
+  parameters:
+    limit:
+      name: limit
+      in: query
+      description: The amount of items to return
+      required: true
+      style: form
+      explode: true
+      schema:
+        maximum: 50
+        minimum: 1
+        type: integer
+    offset:
+      name: offset
+      in: query
+      description: The amount of items to skip before starting fetch
+      required: true
+      style: form
+      explode: true
+      schema:
+        minimum: 0
+        type: integer
+    postId:
+      name: postId
+      in: path
+      description: Id of a post
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: integer
+    postTitle:
+      name: title
+      in: query
+      description: Post title
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: string
+    postSummary:
+      name: summary
+      in: query
+      description: Post summary
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: string
+    postContent:
+      name: content
+      in: query
+      description: Post content
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: string
+    postCategoryList:
+      name: categoryList
+      in: query
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        items:
+          type: integer
