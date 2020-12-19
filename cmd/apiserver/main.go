@@ -4,11 +4,11 @@ import (
 	"flag"
 	"log"
 
+	"github.com/CcyBborg/golik-blog/internal/api/handler/posthandler"
 	"github.com/CcyBborg/golik-blog/internal/api/handler/postshandler"
 
 	"github.com/BurntSushi/toml"
 	"github.com/CcyBborg/golik-blog/internal/app/apiserver"
-	"github.com/CcyBborg/golik-blog/internal/services/posts"
 	"github.com/CcyBborg/golik-blog/internal/store"
 )
 
@@ -35,16 +35,15 @@ func main() {
 	}
 	defer st.Close()
 
-	// Initialize services
-	postsService := posts.New(st)
-
 	// Initialize handlers
-	postsHandler := postshandler.New(postsService)
+	postsHandler := postshandler.New(st)
+	postHandler := posthandler.New(st)
 
 	s := apiserver.New(config)
 
 	// Register HTTP-handlers
-	s.RegisterHTTPHandler("/api/1/posts", postsHandler.Handle)
+	s.RegisterHTTPHandler("/posts", postsHandler.Handle)
+	s.RegisterHTTPHandler("/posts/{postID}", postHandler.Handle)
 
 	if err := s.Start(); err != nil {
 		log.Fatal(err)

@@ -159,32 +159,21 @@ paths:
         in: query
         required: false
         style: form
-        explode: true
+        explode: false
         schema:
           type: array
           items:
             type: integer
+      - name: publish
+        in: query
+        required: false
+        style: form
+        explode: false
+        schema:
+          type: boolean
       responses:
         "200":
           description: Updated
-        "403":
-          description: Not authorized
-  /api/1/posts/{postId}/publish:
-    post:
-      summary: Publish post to public
-      operationId: PublishPost
-      parameters:
-      - name: postId
-        in: path
-        description: Id of a post
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: integer
-      responses:
-        "200":
-          description: Published
         "403":
           description: Not authorized
   /api/1/posts/{postId}/comments:
@@ -263,7 +252,6 @@ components:
       - commentsCount
       - content
       - id
-      - publishedAt
       - summary
       - title
       - updatedAt
@@ -376,7 +364,6 @@ components:
       - categoryList
       - commentsCount
       - id
-      - publishedAt
       - summary
       - title
       - updatedAt

@@ -4,22 +4,25 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
+	"github.com/CcyBborg/golik-blog/internal/api/schema"
 	"github.com/CcyBborg/golik-blog/internal/api/utils"
 	"github.com/CcyBborg/golik-blog/internal/models"
-	"github.com/CcyBborg/golik-blog/internal/services/posts"
+	"github.com/CcyBborg/golik-blog/internal/store"
 )
 
-type getter interface {
-	GetPosts(opts posts.Opts) ([]models.Post, error)
+type keeper interface {
+	GetPosts(opts store.Opts) ([]models.Post, error)
+	InsertPost(post models.Post) (postID int64, err error)
 }
 
 type Handler struct {
-	getter getter
+	keeper keeper
 }
 
-func New(getter getter) *Handler {
-	return &Handler{getter: getter}
+func New(keeper keeper) *Handler {
+	return &Handler{keeper: keeper}
 }
 
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
@@ -46,13 +49,13 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		posts, err := h.getter.GetPosts(posts.Opts{
-			Pagination: posts.Pagination{
+		posts, err := h.keeper.GetPosts(store.Opts{
+			Pagination: store.Pagination{
 				Offset: offset,
 				Limit:  limit,
 			},
-			Sort: posts.Sort{
-				UpdatedAt: &posts.SortDesc,
+			Sort: store.Sort{
+				UpdatedAt: &store.SortDesc,
 			},
 		})
 		if err != nil {
@@ -60,16 +63,77 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		schemaPosts := convertPosts(posts)
-
-		json, err := json.Marshal(schemaPosts)
+		jsonResponse, err := json.Marshal(schema.ConvertPosts(posts))
 		if err != nil {
 			utils.WriteInternalError(w)
 			return
 		}
 
-		utils.WriteJSON(w, json)
+		utils.WriteJSON(w, jsonResponse)
 	} else if r.Method == http.MethodPost {
+		userID := int64(1) // Remove after JWT
 
+		if err := r.ParseForm(); err != nil {
+			utils.WriteInvalidParams(w)
+		}
+
+		title := r.Form.Get("title")
+		if title == "" {
+			utils.WriteInvalidParams(w)
+			return
+		}
+
+		summary := r.Form.Get("summary")
+		if summary == "" {
+			utils.WriteInvalidParams(w)
+			return
+		}
+
+		content := r.Form.Get("content")
+		if content == "" {
+			utils.WriteInvalidParams(w)
+			return
+		}
+
+		categories := r.Form.Get("categoryList")
+		if categories == "" {
+			utils.WriteInvalidParams(w)
+			return
+		}
+
+		categoriesParsed := strings.Split(categories, ",")
+
+		newPost := models.Post{
+			Author: models.User{
+				ID: userID,
+			},
+			Title:      title,
+			Summary:    summary,
+			Content:    content,
+			Categories: make([]models.Category, len(categoriesParsed)),
+		}
+
+		for i, category := range categoriesParsed {
+			id, err := strconv.ParseInt(category, 10, 64)
+			if err != nil {
+				utils.WriteInvalidParams(w)
+				return
+			}
+			newPost.Categories[i].ID = id
+		}
+
+		postID, err := h.keeper.InsertPost(newPost)
+		if err != nil {
+			utils.WriteInternalError(w)
+			return
+		}
+
+		jsonResponse, err := json.Marshal(postID)
+		if err != nil {
+			utils.WriteInternalError(w)
+			return
+		}
+
+		utils.WriteJSON(w, jsonResponse)
 	}
 }

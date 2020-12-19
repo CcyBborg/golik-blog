@@ -1,11 +1,11 @@
 package store
 
+// TODO: Contains lots of buisness logic/remove later to Repository
 import (
 	"database/sql"
 	"fmt"
 
 	"github.com/CcyBborg/golik-blog/internal/models"
-	"github.com/CcyBborg/golik-blog/internal/services/posts"
 
 	_ "github.com/lib/pq"
 )
@@ -18,7 +18,12 @@ const (
 						LIMIT %d OFFSET %d;`
 	getCategoriesForPostPattern = `SELECT category.id, category.title FROM category, post_category
 						WHERE category.id = post_category.category_id AND post_category.post_id = %d;`
-	getUserByIDPattern = `SELECT id, username FROM "user" WHERE id = %d;`
+	getUserByIDPattern      = `SELECT id, username FROM "user" WHERE id = %d;`
+	insertPostQuery         = `INSERT INTO "post" (author_id, title, summary, content) VALUES (%d, '%s', '%s', '%s') RETURNING id;`
+	insertPostCategory      = `INSERT INTO "post_category" (post_id, category_id) VALUES (%d, %d);`
+	getPostQueryPattern     = `SELECT id, author_id, title, summary, content, created_at, updated_at, published_at FROM "post" WHERE id = $1;`
+	updatePostQueryPattern  = `UPDATE post SET (title, summary, content) = ($1, $2, $3) WHERE id = $4;`
+	publishPostQueryPattern = `UPDATE post SET published_at = NOW() WHERE id = $1;`
 )
 
 type Store struct {
@@ -51,7 +56,7 @@ func (s *Store) Close() {
 	s.db.Close()
 }
 
-func (s *Store) GetPosts(opts posts.Opts) ([]models.Post, error) {
+func (s *Store) GetPosts(opts Opts) ([]models.Post, error) {
 	query := fmt.Sprintf(getPostsQueryPattern, opts.Sort.UpdatedAt, opts.Pagination.Limit,
 		opts.Pagination.Offset)
 
@@ -87,6 +92,62 @@ func (s *Store) GetPosts(opts posts.Opts) ([]models.Post, error) {
 	}
 
 	return postList, nil
+}
+
+func (s *Store) InsertPost(post models.Post) (postID int64, err error) {
+	query := fmt.Sprintf(insertPostQuery, post.Author.ID, post.Title, post.Summary, post.Content)
+
+	if err = s.db.QueryRow(query).Scan(&postID); err != nil {
+		return postID, err
+	}
+
+	for _, category := range post.Categories {
+		query := fmt.Sprintf(insertPostCategory, postID, category.ID)
+		if _, err = s.db.Exec(query); err != nil {
+			return postID, err
+		}
+	}
+
+	return postID, err
+}
+
+func (s *Store) GetPost(postID int64) (post models.Post, err error) {
+	var authorID int64
+	var updatedAt, publishedAt sql.NullTime
+	err = s.db.QueryRow(getPostQueryPattern, postID).Scan(
+		&post.ID, &authorID, &post.Title, &post.Summary,
+		&post.Content, &post.CreatedAt, &updatedAt, &publishedAt)
+	if err != nil {
+		return post, err
+	}
+
+	if updatedAt.Valid {
+		post.UpdatedAt = updatedAt.Time
+	}
+	if publishedAt.Valid {
+		post.PublishedAt = publishedAt.Time
+	}
+	if post.Categories, err = s.getPostCategories(post.ID); err != nil {
+		return post, err
+	}
+	if post.Author, err = s.getUserByID(authorID); err != nil {
+		return post, err
+	}
+
+	return post, nil
+}
+
+func (s *Store) UpdatePost(post models.Post, publish bool) error {
+	if _, err := s.db.Exec(updatePostQueryPattern, post.Title, post.Summary, post.Content, post.ID); err != nil {
+		return err
+	}
+
+	if publish {
+		_, err := s.db.Exec(publishPostQueryPattern, post.ID)
+		return err
+	}
+
+	return nil
 }
 
 func (s *Store) getPostCategories(postID int64) ([]models.Category, error) {
