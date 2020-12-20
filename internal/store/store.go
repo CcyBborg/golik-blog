@@ -26,6 +26,7 @@ const (
 	publishPostQueryPattern        = `UPDATE post SET published_at = NOW() WHERE id = $1;`
 	deletePostCategoryQueryPattern = `DELETE FROM post_category WHERE post_id = $1;`
 	deletePostQueryPattern         = `DELETE FROM post WHERE id = $1;`
+	getCommentsQueryPattern        = `SELECT id, author_id, created_at, content FROM post_comment WHERE post_id = $1 ORDER BY created_at;`
 )
 
 type Store struct {
@@ -161,6 +162,30 @@ func (s *Store) DeletePost(postID int64) error {
 	_, err = s.db.Exec(deletePostQueryPattern, postID)
 
 	return err
+}
+
+func (s *Store) GetComments(postID int64) ([]models.Comment, error) {
+	rows, err := s.db.Query(getCommentsQueryPattern, postID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	comments := make([]models.Comment, 0)
+	for rows.Next() {
+		comment := models.Comment{}
+		var authorID int64
+		if err := rows.Scan(&comment.ID, &authorID, &comment.CreatedAt, &comment.Content); err != nil {
+			return nil, err
+		}
+		if comment.Author, err = s.getUserByID(authorID); err != nil {
+			return nil, err
+		}
+		comments = append(comments, comment)
+	}
+
+	return comments, nil
 }
 
 func (s *Store) getPostCategories(postID int64) ([]models.Category, error) {

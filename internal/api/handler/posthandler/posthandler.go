@@ -127,7 +127,6 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 
 		if err := h.keeper.DeletePost(postID); err != nil {
 			utils.WriteInternalError(w)
-			fmt.Println(err)
 			return
 		}
 

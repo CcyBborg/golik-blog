@@ -61,3 +61,21 @@ func ConvertCategories(categories []models.Category) []Category {
 
 	return schemaCategories
 }
+
+func ConvertComments(comments []models.Comment) []Comment {
+	schemaComments := make([]Comment, len(comments))
+
+	for i, comment := range comments {
+		schemaComments[i] = Comment{
+			ID:        comment.ID,
+			CreatedAt: comment.CreatedAt,
+			Author: User{
+				ID:       comment.Author.ID,
+				Username: comment.Author.Username,
+			},
+			Content: comment.Content,
+		}
+	}
+
+	return schemaComments
+}

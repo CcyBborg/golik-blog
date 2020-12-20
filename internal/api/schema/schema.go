@@ -36,3 +36,10 @@ type Post struct {
 	CommentsCount int64      `json:"commentsCount"`
 	Content       string     `json:"content"`
 }
+
+type Comment struct {
+	ID        int64     `json:"id"`
+	Author    User      `json:"author"`
+	CreatedAt time.Time `json:"createdAt"`
+	Content   string    `json:"content"`
+}
