@@ -18,6 +18,7 @@ import (
 type keeper interface {
 	GetPost(postID int64) (models.Post, error)
 	UpdatePost(post models.Post, publish bool) error
+	DeletePost(postID int64) error
 }
 
 type Handler struct {
@@ -106,6 +107,27 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		if err = h.keeper.UpdatePost(post, publish); err != nil {
 			fmt.Println(err)
 			utils.WriteInternalError(w)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	} else if r.Method == http.MethodDelete {
+		userID := int64(1) // Remove after JWT
+
+		post, err := h.keeper.GetPost(postID)
+		if err != nil {
+			utils.WriteInvalidParams(w)
+			return
+		}
+
+		if post.Author.ID != userID {
+			utils.WriteUnauthorized(w)
+			return
+		}
+
+		if err := h.keeper.DeletePost(postID); err != nil {
+			utils.WriteInternalError(w)
+			fmt.Println(err)
 			return
 		}
 

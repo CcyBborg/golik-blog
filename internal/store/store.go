@@ -18,12 +18,14 @@ const (
 						LIMIT %d OFFSET %d;`
 	getCategoriesForPostPattern = `SELECT category.id, category.title FROM category, post_category
 						WHERE category.id = post_category.category_id AND post_category.post_id = %d;`
-	getUserByIDPattern      = `SELECT id, username FROM "user" WHERE id = %d;`
-	insertPostQuery         = `INSERT INTO "post" (author_id, title, summary, content) VALUES (%d, '%s', '%s', '%s') RETURNING id;`
-	insertPostCategory      = `INSERT INTO "post_category" (post_id, category_id) VALUES (%d, %d);`
-	getPostQueryPattern     = `SELECT id, author_id, title, summary, content, created_at, updated_at, published_at FROM "post" WHERE id = $1;`
-	updatePostQueryPattern  = `UPDATE post SET (title, summary, content) = ($1, $2, $3) WHERE id = $4;`
-	publishPostQueryPattern = `UPDATE post SET published_at = NOW() WHERE id = $1;`
+	getUserByIDPattern             = `SELECT id, username FROM "user" WHERE id = %d;`
+	insertPostQuery                = `INSERT INTO "post" (author_id, title, summary, content) VALUES (%d, '%s', '%s', '%s') RETURNING id;`
+	insertPostCategory             = `INSERT INTO "post_category" (post_id, category_id) VALUES (%d, %d);`
+	getPostQueryPattern            = `SELECT id, author_id, title, summary, content, created_at, updated_at, published_at FROM "post" WHERE id = $1;`
+	updatePostQueryPattern         = `UPDATE post SET (title, summary, content) = ($1, $2, $3) WHERE id = $4;`
+	publishPostQueryPattern        = `UPDATE post SET published_at = NOW() WHERE id = $1;`
+	deletePostCategoryQueryPattern = `DELETE FROM post_category WHERE post_id = $1;`
+	deletePostQueryPattern         = `DELETE FROM post WHERE id = $1;`
 )
 
 type Store struct {
@@ -148,6 +150,17 @@ func (s *Store) UpdatePost(post models.Post, publish bool) error {
 	}
 
 	return nil
+}
+
+func (s *Store) DeletePost(postID int64) error {
+	_, err := s.db.Exec(deletePostCategoryQueryPattern, postID)
+	if err != nil {
+		return nil
+	}
+
+	_, err = s.db.Exec(deletePostQueryPattern, postID)
+
+	return err
 }
 
 func (s *Store) getPostCategories(postID int64) ([]models.Category, error) {
