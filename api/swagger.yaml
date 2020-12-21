@@ -222,6 +222,11 @@ paths:
       responses:
         "200":
           description: Published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_1'
+              x-content-type: application/json
         "403":
           description: Not authorized
   /api/1/categories:

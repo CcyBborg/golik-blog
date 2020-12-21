@@ -19,7 +19,7 @@ const (
 	getCategoriesForPostPattern = `SELECT category.id, category.title FROM category, post_category
 						WHERE category.id = post_category.category_id AND post_category.post_id = %d;`
 	getUserByIDPattern             = `SELECT id, username FROM "user" WHERE id = %d;`
-	insertPostQuery                = `INSERT INTO "post" (author_id, title, summary, content) VALUES (%d, '%s', '%s', '%s') RETURNING id;`
+	insertPostQuery                = `INSERT INTO post (author_id, title, summary, content) VALUES (%d, '%s', '%s', '%s') RETURNING id;`
 	insertPostCategory             = `INSERT INTO "post_category" (post_id, category_id) VALUES (%d, %d);`
 	getPostQueryPattern            = `SELECT id, author_id, title, summary, content, created_at, updated_at, published_at FROM "post" WHERE id = $1;`
 	updatePostQueryPattern         = `UPDATE post SET (title, summary, content) = ($1, $2, $3) WHERE id = $4;`
@@ -27,6 +27,7 @@ const (
 	deletePostCategoryQueryPattern = `DELETE FROM post_category WHERE post_id = $1;`
 	deletePostQueryPattern         = `DELETE FROM post WHERE id = $1;`
 	getCommentsQueryPattern        = `SELECT id, author_id, created_at, content FROM post_comment WHERE post_id = $1 ORDER BY created_at;`
+	insertCommentQueryPattern      = `INSERT INTO post_comment (post_id, author_id, content) VALUES ($1, $2, $3) RETURNING id, created_at;`
 )
 
 type Store struct {
@@ -186,6 +187,18 @@ func (s *Store) GetComments(postID int64) ([]models.Comment, error) {
 	}
 
 	return comments, nil
+}
+
+func (s *Store) InsertComment(comment *models.Comment) error {
+	if err := s.db.QueryRow(
+		insertCommentQueryPattern, comment.PostID, comment.Author.ID, comment.Content,
+	).Scan(&comment.ID, &comment.CreatedAt); err == nil {
+		return err
+	}
+
+	var err error
+	comment.Author, err = s.getUserByID(comment.Author.ID)
+	return err
 }
 
 func (s *Store) getPostCategories(postID int64) ([]models.Category, error) {
