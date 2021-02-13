@@ -16,6 +16,10 @@ const (
 						WHERE published_at IS NOT NULL
 						ORDER BY updated_at %s
 						LIMIT %d OFFSET %d;`
+	getUserPostsQueryPattern = `SELECT id, author_id, title, summary, content, created_at, updated_at, published_at
+						FROM "post"
+						WHERE author_id = %d
+						ORDER BY updated_at;`
 	getCategoriesForPostPattern = `SELECT category.id, category.title FROM category, post_category
 						WHERE category.id = post_category.category_id AND post_category.post_id = %d;`
 	getUserByIDPattern             = `SELECT id, username FROM "user" WHERE id = %d;`
@@ -28,6 +32,7 @@ const (
 	deletePostQueryPattern         = `DELETE FROM post WHERE id = $1;`
 	getCommentsQueryPattern        = `SELECT id, author_id, created_at, content FROM post_comment WHERE post_id = $1 ORDER BY created_at;`
 	insertCommentQueryPattern      = `INSERT INTO post_comment (post_id, author_id, content) VALUES ($1, $2, $3) RETURNING id, created_at;`
+	getCategoriesQueryPattern      = `SELECT id, title FROM category;`
 )
 
 type Store struct {
@@ -63,6 +68,43 @@ func (s *Store) Close() {
 func (s *Store) GetPosts(opts Opts) ([]models.Post, error) {
 	query := fmt.Sprintf(getPostsQueryPattern, opts.Sort.UpdatedAt, opts.Pagination.Limit,
 		opts.Pagination.Offset)
+
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	postList := make([]models.Post, 0)
+	for rows.Next() {
+		post := models.Post{}
+		var authorID int64
+		var updatedAt, publishedAt sql.NullTime
+		if err := rows.Scan(&post.ID, &authorID, &post.Title, &post.Summary,
+			&post.Content, &post.CreatedAt, &updatedAt, &publishedAt); err != nil {
+			return nil, err
+		}
+		if updatedAt.Valid {
+			post.UpdatedAt = updatedAt.Time
+		}
+		if publishedAt.Valid {
+			post.PublishedAt = publishedAt.Time
+		}
+		if post.Categories, err = s.getPostCategories(post.ID); err != nil {
+			return nil, err
+		}
+		if post.Author, err = s.getUserByID(authorID); err != nil {
+			return nil, err
+		}
+		postList = append(postList, post)
+	}
+
+	return postList, nil
+}
+
+func (s *Store) GetUserPosts(userID int64) ([]models.Post, error) {
+	query := fmt.Sprintf(getUserPostsQueryPattern, userID)
 
 	rows, err := s.db.Query(query)
 	if err != nil {
@@ -199,6 +241,26 @@ func (s *Store) InsertComment(comment *models.Comment) error {
 	var err error
 	comment.Author, err = s.getUserByID(comment.Author.ID)
 	return err
+}
+
+func (s *Store) GetCategories() ([]models.Category, error) {
+	rows, err := s.db.Query(getCategoriesQueryPattern)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	categories := make([]models.Category, 0)
+	for rows.Next() {
+		category := models.Category{}
+		if err := rows.Scan(&category.ID, &category.Title); err != nil {
+			return nil, err
+		}
+		categories = append(categories, category)
+	}
+
+	return categories, nil
 }
 
 func (s *Store) getPostCategories(postID int64) ([]models.Category, error) {

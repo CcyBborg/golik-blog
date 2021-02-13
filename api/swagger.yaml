@@ -5,7 +5,7 @@ info:
 servers:
 - url: /
 paths:
-  /api/1/posts:
+  /posts:
     get:
       summary: Get list of posts
       operationId: GetPostList
@@ -82,7 +82,7 @@ paths:
                 $ref: '#/components/schemas/inline_response_200'
         "403":
           description: Not authorized
-  /api/1/posts/{postId}:
+  /posts/{postId}:
     get:
       summary: Get a specific post
       operationId: GetPost
@@ -176,7 +176,7 @@ paths:
           description: Updated
         "403":
           description: Not authorized
-  /api/1/posts/{postId}/comments:
+  /posts/{postId}/comments:
     get:
       summary: Get list of comments for post
       operationId: GetComments
@@ -229,7 +229,7 @@ paths:
               x-content-type: application/json
         "403":
           description: Not authorized
-  /api/1/categories:
+  /categories:
     get:
       summary: Get list of categories
       operationId: GetfCategories

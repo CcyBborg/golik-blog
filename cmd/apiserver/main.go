@@ -4,7 +4,9 @@ import (
 	"flag"
 	"log"
 
+	"github.com/CcyBborg/golik-blog/internal/api/handler/categorieshandler"
 	"github.com/CcyBborg/golik-blog/internal/api/handler/commentshandler"
+	"github.com/CcyBborg/golik-blog/internal/api/handler/mypostshandler"
 	"github.com/CcyBborg/golik-blog/internal/api/handler/posthandler"
 	"github.com/CcyBborg/golik-blog/internal/api/handler/postshandler"
 
@@ -39,14 +41,18 @@ func main() {
 	// Initialize handlers
 	postsHandler := postshandler.New(st)
 	postHandler := posthandler.New(st)
+	mypostsHandler := mypostshandler.New(st)
 	commentsHandler := commentshandler.New(st)
+	categoriesHandler := categorieshandler.New(st)
 
 	s := apiserver.New(config)
 
 	// Register HTTP-handlers
 	s.RegisterHTTPHandler("/posts", postsHandler.Handle)
 	s.RegisterHTTPHandler("/posts/{postID}", postHandler.Handle)
+	s.RegisterHTTPHandler("/myposts", mypostsHandler.Handle)
 	s.RegisterHTTPHandler("/posts/{postID}/comments", commentsHandler.Handle)
+	s.RegisterHTTPHandler("/categories", categoriesHandler.Handle)
 
 	if err := s.Start(); err != nil {
 		log.Fatal(err)

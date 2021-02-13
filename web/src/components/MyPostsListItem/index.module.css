@@ -1,0 +1,29 @@
+.date {
+    color: #757575;
+    font-size: 12px;
+    display: block;
+    margin: 8px 0;
+}
+
+.actions {
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    margin-top: 16px;
+}
+
+.actions button {
+    background-color: transparent;
+    border: none;
+    text-decoration: underline;
+    padding: 0;
+    padding-right: 8px;
+}
+
+.editBtn {
+    color: #6F7070;
+}
+
+.deleteBtn {
+    color: #FF654D;
+}

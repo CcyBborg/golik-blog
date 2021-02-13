@@ -1,0 +1,18 @@
+.root {
+    padding: 16px;
+}
+
+.title {
+    margin: 0;
+}
+
+.title span {
+    color: #6F7070;
+}
+
+.list {
+    padding: 0;
+    padding-top: 16px;
+    list-style: none;
+    margin: 0;
+}

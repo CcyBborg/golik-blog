@@ -60,6 +60,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 
 		if err := r.ParseForm(); err != nil {
 			utils.WriteInvalidParams(w)
+			return
 		}
 
 		content := r.Form.Get("content")

@@ -1,4 +1,4 @@
-bind_addr = ":8888"
+bind_addr = ":8890"
 log_level = "debug"
 
 [store]
